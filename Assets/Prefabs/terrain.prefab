@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2357772074795526691}
   - component: {fileID: 802251065174261321}
   m_Layer: 0
-  m_Name: path
+  m_Name: terrain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

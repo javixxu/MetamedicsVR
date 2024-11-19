@@ -20,18 +20,42 @@ public class GenerateTerrain : MonoBehaviour
         UnityEngine.Random.InitState(iSeed);
     }
 
-    void Generate(){
-        SetRandomSeed();//inicializar la semilla
+    public void Generate(){
+        SetRandomSeed(); // Inicializar la semilla
 
-        Vector2Int vStart = new Vector2Int(iChunSize/2, iChunSize / 2);
-        float probabilityBifurcation = Mathf.Pow(Mathf.Clamp01((0 - 1) / (float)iChunkNumSize), 2);
-        Chunk cChunk = new Chunk(iChunSize, vStart, this);
+        Vector2Int vStart = new Vector2Int(iChunSize / 2, iChunSize / 2);
+        Vector3 currentPosition = Vector3.zero; // Posición inicial en el editor
 
-        for (int i = 0; i < iChunkNumSize; i++) {
+        for (int i = 0; i < iChunkNumSize; i++)
+        {
+            Chunk cChunk = new Chunk(iChunSize, vStart, this);
+            map3D.Add(vStart * i, cChunk);
 
+            // Colocar el chunk en la posición actual
+            cChunk.GChunk.transform.position = currentPosition;
 
-            //map3D.Add(new Vector2(), cChunk);
-            //vStart = cChunk.GetEnd();
+            // Obtener el punto final del chunk actual
+            Vector2Int vEnd = cChunk.GetEnd();
+
+            // Determinar la dirección del movimiento basado en la posición de vEnd
+            Vector3 direction = Vector3.zero;
+            if (vEnd.x == 0)
+                direction = Vector3.left;
+            else if (vEnd.x == iChunSize - 1)
+                direction = Vector3.right;
+            else if (vEnd.y == 0)
+                direction = Vector3.back;
+            else if (vEnd.y == iChunSize - 1)
+                direction = Vector3.forward;
+
+            // Actualizar la posición del siguiente chunk
+            currentPosition += direction * iChunSize;
+
+            // Actualizar vStart para el siguiente chunk
+            vStart = new Vector2Int(
+                direction == Vector3.left ? iChunSize - 1 : (direction == Vector3.right ? 0 : vEnd.x),
+                direction == Vector3.back ? iChunSize - 1 : (direction == Vector3.forward ? 0 : vEnd.y)
+            );
         }
     }
 
