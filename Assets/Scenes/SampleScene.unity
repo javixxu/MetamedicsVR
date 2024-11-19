@@ -285,9 +285,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a0a8333d210945e4aa53b7b412006176, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  iSeed: 0
-  iChunSize: 0
-  iChunkNumSize: 0
+  iSeed: 465
+  iChunSize: 13
+  iChunkNumSize: 1
   gPath: {fileID: 4972330626988276036, guid: f366af828997a104c849e0ccf87841d6, type: 3}
   gWall: {fileID: 4972330626988276036, guid: 4c965439840b81e48af5b7fde5529f93, type: 3}
 --- !u!4 &388520945

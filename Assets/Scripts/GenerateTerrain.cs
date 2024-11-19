@@ -21,12 +21,14 @@ public class GenerateTerrain : MonoBehaviour
     }
 
     void Generate(){
+        SetRandomSeed();//inicializar la semilla
+
         Vector2Int vStart = new Vector2Int(iChunSize/2, iChunSize / 2);
+        float probabilityBifurcation = Mathf.Pow(Mathf.Clamp01((0 - 1) / (float)iChunkNumSize), 2);
+        Chunk cChunk = new Chunk(iChunSize, vStart, this);
 
         for (int i = 0; i < iChunkNumSize; i++) {
 
-            float probabilityBifurcation = Mathf.Pow(Mathf.Clamp01((i - 1) / (float)iChunkNumSize), 2);
-            Chunk cChunk = new Chunk(iChunSize, vStart, probabilityBifurcation,this);
 
             //map3D.Add(new Vector2(), cChunk);
             //vStart = cChunk.GetEnd();
