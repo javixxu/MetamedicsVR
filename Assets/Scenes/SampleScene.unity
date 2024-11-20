@@ -287,7 +287,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   iSeed: 616
   iChunSize: 13
-  iChunkNumSize: 20
+  iChunkNumSize: 5
   gPath: {fileID: 4972330626988276036, guid: f366af828997a104c849e0ccf87841d6, type: 3}
   gWall: {fileID: 4972330626988276036, guid: 4c965439840b81e48af5b7fde5529f93, type: 3}
 --- !u!4 &388520945
