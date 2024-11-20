@@ -9,6 +9,8 @@ public class GenerateTerrain : MonoBehaviour
     public int Seed;
     public int ChunkSize;
     public int ChunkNumSize;
+    [Range(0.0f, 1.0f)]
+    public float BifurcationIncrease = 0.05f;
 
     [Header("Aditional Configuration")]
     [Range(0.0f, 1.0f)]
@@ -32,7 +34,7 @@ public class GenerateTerrain : MonoBehaviour
 
         Vector2Int vStart = new Vector2Int(ChunkSize / 2, ChunkSize / 2);
         Vector3 currentPosition = Vector3.zero; // Posición inicial en el editor
-        float bifurcationProbability = 0.05f; // Probabilidad inicial de bifurcaciones
+        float bifurcationProbability = BifurcationIncrease; // Probabilidad inicial de bifurcaciones
 
         for (int i = 0; i < ChunkNumSize; i++)
         {
@@ -67,7 +69,7 @@ public class GenerateTerrain : MonoBehaviour
                 direction == Vector3.back ? ChunkSize - 1 : (direction == Vector3.forward ? 0 : vEnd.y)
             );
 
-            bifurcationProbability = Mathf.Min(0.6f, bifurcationProbability + i * 0.05f);
+            bifurcationProbability = Mathf.Min(0.6f, bifurcationProbability + i * BifurcationIncrease);
         }
     }
 
