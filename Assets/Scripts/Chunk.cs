@@ -56,7 +56,7 @@ public class Chunk
                 var newEnd = GetValidEndPoint();
 
                 if (newEnd != new Vector2Int()){ 
-                    vEndPoints.Add(vEndPoint);
+                    vEndPoints.Add(newEnd);
                     vStartPoints.Add(newEnd);
                 }
             }
@@ -249,5 +249,9 @@ public class Chunk
     public List<Vector2Int> GetEnd()
     {
         return vEndPoints;
+    }
+    public List<Vector2Int> GetStart()
+    {
+        return vStartPoints;
     }
 }
