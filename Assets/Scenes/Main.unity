@@ -285,9 +285,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a0a8333d210945e4aa53b7b412006176, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Seed: 465
+  Seed: 660
   ChunkSize: 13
-  ChunkNumSize: 6
+  ChunkNumSize: 15
   BifurcationIncrease: 0.05
   centerFactor: 0.5
   pathIrregularity: 0.2
