@@ -7,22 +7,29 @@ public class Chunk
 {
     private GenerateTerrain generateTerrain;
     private int iSize;
+
     private List<Vector2Int> vStartPoints; // Lista de puntos de inicio
     private List<Vector2Int> vEndPoints = new List<Vector2Int>(); // Lista de puntos de inicio
 
-    private List<Vector2Int> mChunkData; // Representación del chunk (pasable / no pasable)
+    private List<Vector2Int> mChunkData;// Guardar las casillas con los caminos 
+
     public GameObject GChunk;
-    private float bifurcationProbability;
+
+    float bifurcationProbability;
+    float centerFactor;
+    float pathIrregularity;
 
     // Constructor
-    public Chunk(int _iSize, List<Vector2Int> _vStartPoint, float _bifurcationProbability, GenerateTerrain _generateTerrain)
+    public Chunk(int _iSize, List<Vector2Int> _vStartPoint,
+        float _bifurcationProbability,float _centerFactor, float _pathIrregularity, GenerateTerrain _generateTerrain)
     {
         iSize = _iSize;
-        vStartPoints = _vStartPoint; // Inicializar con el primer punto de inicio
+        vStartPoints = _vStartPoint;
         generateTerrain = _generateTerrain;
         bifurcationProbability = _bifurcationProbability;
+        centerFactor = _centerFactor;
+        pathIrregularity = _pathIrregularity;
 
-        // Inicializar los datos del chunk
         mChunkData = new List<Vector2Int>();
 
         // Generar el camino dentro del chunk
@@ -37,14 +44,14 @@ public class Chunk
     // Generación del camino dentro del chunk
     void GeneratePathInChunk()
     {
-        // Asegurarse de que el punto final no esté en el borde
-        var vEndPoint = GetValidEndPoint();
+        
+        var vEndPoint = GetValidEndPoint(); //Generar Borde
         if (vEndPoint != new Vector2Int())
         {
-            vEndPoints.Add(vEndPoint);
-            vStartPoints.Add(vEndPoint);
+            vEndPoints.Add(vEndPoint); //Si hay posible borde
+            vStartPoints.Add(vEndPoint); //Tratar todos los puntos como start
 
-            if (Random.value < bifurcationProbability)
+            if (Random.value < bifurcationProbability) //Si hay bifulcación
             {
                 var newEnd = GetValidEndPoint();
 
@@ -69,7 +76,7 @@ public class Chunk
         }
     }
 
-    // obtener un borde libre aleatorio para el punto final
+    // Obtener un borde libre aleatorio para el punto final
     Vector2Int GetValidEndPoint()
     {
         List<Vector2Int> possibleEdges = new List<Vector2Int> {
@@ -107,8 +114,7 @@ public class Chunk
     }
 
     //A*
-    List<Vector2Int> GeneratePath(
-     Vector2Int start, Vector2Int end)
+    List<Vector2Int> GeneratePath(Vector2Int start, Vector2Int end)
     {
         List<Vector2Int> path = new List<Vector2Int>();
 
@@ -119,7 +125,7 @@ public class Chunk
         var fScore = new Dictionary<Vector2Int, float>();
 
         openSet.Add(start);
-        gScore[start] = gScore.GetValueOrDefault(start, 0);
+        gScore[start] = 0;
         fScore[start] = gScore[start] + Heuristic(start, end);
 
         while (openSet.Count > 0)
@@ -145,7 +151,10 @@ public class Chunk
                 if (closedSet.Contains(neighbor))
                     continue;
 
-                float tentativeGScore = gScore.GetValueOrDefault(current, float.MaxValue) + 1;
+                // Calcular el costo G con el factor de irregularidad
+                float centerCost = CalculateCenterCost(neighbor); // Costo basado en la distancia al centro
+                float randomFactor = UnityEngine.Random.Range(1 - pathIrregularity, 1 + pathIrregularity); // Factor aleatorio
+                float tentativeGScore = gScore.GetValueOrDefault(current, float.MaxValue) + 1 + centerCost * randomFactor;
 
                 if (!openSet.Contains(neighbor))
                     openSet.Add(neighbor);
@@ -162,28 +171,38 @@ public class Chunk
         return path;
     }
 
+    // Calcular el costo basado en la distancia al centro
+    float CalculateCenterCost(Vector2Int point)
+    {
+        float centerX = iSize / 2;
+        float centerY = iSize / 2;
+        float distance = Mathf.Sqrt(Mathf.Pow(centerX - point.x, 2) + Mathf.Pow(centerY - point.y, 2));
+        float maxDistance = Mathf.Sqrt(Mathf.Pow(centerX, 2) + Mathf.Pow(centerY, 2));
 
+        // Escalar la distancia al centro en función del factor de centro
+        return (distance / maxDistance) * centerFactor;
+    }
 
-    // Método para obtener los vecinos adyacentes (evitar bordes)
-    List<Vector2Int> GetNeighbors(Vector2Int point,Vector2Int endPoint)
+    // Obtener los vecinos adyacentes (evitar bordes)
+    List<Vector2Int> GetNeighbors(Vector2Int point, Vector2Int endPoint)
     {
         List<Vector2Int> neighbors = new List<Vector2Int>
-        {
-            new Vector2Int(point.x - 1, point.y), // Izquierda
-            new Vector2Int(point.x + 1, point.y), // Derecha
-            new Vector2Int(point.x, point.y - 1), // Arriba
-            new Vector2Int(point.x, point.y + 1)  // Abajo
-        };
+    {
+        new Vector2Int(point.x - 1, point.y), // Izquierda
+        new Vector2Int(point.x + 1, point.y), // Derecha
+        new Vector2Int(point.x, point.y - 1), // Arriba
+        new Vector2Int(point.x, point.y + 1)  // Abajo
+    };
 
         // Filtrar vecinos que estén dentro de los límites válidos (evitar bordes)
         neighbors = neighbors.Where(n =>
-        (!IsBlocked(n) || n==endPoint) // Permitimos el nodo final aunque esté en el borde
+        (!IsBlocked(n) || n == endPoint) // Permitimos el nodo final aunque esté en el borde
         ).ToList();
 
         return neighbors;
     }
 
-    // Método para verificar si una celda está bloqueada
+    // Ver si la celda es un posible camino
     public bool IsBlocked(Vector2Int current)
     {
         // Combinamos todas las condiciones de los bordes en una sola verificación
@@ -208,14 +227,14 @@ public class Chunk
         return lowest;
     }
 
-    // generar el mesh del chunk
+    // Generar el mesh del chunk
     void GenerateMesh()
     {
         for (int i = 0; i < iSize; i++)
         {
             for (int j = 0; j < iSize; j++)
             {
-                GameObject go = GameObject.Instantiate(generateTerrain.gPath, GChunk.transform, false);
+                GameObject go = GameObject.Instantiate(generateTerrain.gFloor, GChunk.transform, false);
                 go.transform.SetLocalPositionAndRotation(new Vector3(i, 0, j), GChunk.transform.rotation);
 
                 if (!mChunkData.Contains(new Vector2Int(i,j)))
