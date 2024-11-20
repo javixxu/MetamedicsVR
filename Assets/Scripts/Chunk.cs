@@ -1,6 +1,6 @@
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class Chunk
@@ -10,7 +10,7 @@ public class Chunk
     private List<Vector2Int> vStartPoints; // Lista de puntos de inicio
     private List<Vector2Int> vEndPoints = new List<Vector2Int>(); // Lista de puntos de inicio
 
-    private bool[,] mChunkData; // Representación del chunk (pasable / no pasable)
+    private List<Vector2Int> mChunkData; // Representación del chunk (pasable / no pasable)
     public GameObject GChunk;
     private float bifurcationProbability;
 
@@ -23,7 +23,7 @@ public class Chunk
         bifurcationProbability = _bifurcationProbability;
 
         // Inicializar los datos del chunk
-        mChunkData = new bool[iSize, iSize];
+        mChunkData = new List<Vector2Int>();
 
         // Generar el camino dentro del chunk
         GeneratePathInChunk();
@@ -57,76 +57,19 @@ public class Chunk
 
         vEndPoint = vStartPoints[vStartPoints.Count-1];
 
-        for(int i = vStartPoints.Count - 2; i >=0; i--)
+        for (int i = vStartPoints.Count - 2; i >=0; i--)
         {
             List<Vector2Int> path = GeneratePath(vStartPoints[i], vEndPoint);
             path.Add(vStartPoints[i]); // Asegurarse de agregar el punto de inicio al camino
 
             // Marcar el camino en mChunkData
-            foreach (var point in path)
-            {
-                mChunkData[point.x, point.y] = true; // Establecer las celdas del camino como pasables
-            }
+            mChunkData.AddRange(path);
+
             vEndPoint = vStartPoints[i];
         }
     }
 
-    // Método para generar el camino usando A*
-    List<Vector2Int> GeneratePath(Vector2Int start, Vector2Int end)
-    {
-        List<Vector2Int> path = new List<Vector2Int>();
-
-        var openSet = new HashSet<Vector2Int>();
-        var closedSet = new HashSet<Vector2Int>();
-        var cameFrom = new Dictionary<Vector2Int, Vector2Int>();
-        var gScore = new Dictionary<Vector2Int, float>();
-        var fScore = new Dictionary<Vector2Int, float>();
-
-        openSet.Add(start);
-        gScore[start] = 0;
-        fScore[start] = Heuristic(start, end);
-
-        while (openSet.Count > 0)
-        {
-            Vector2Int current = GetLowestFScoreNode(openSet, fScore);
-
-            if (current == end)
-            {
-                while (cameFrom.ContainsKey(current))
-                {
-                    path.Add(current);
-                    current = cameFrom[current];
-                }
-                path.Reverse();
-                return path;
-            }
-
-            openSet.Remove(current);
-            closedSet.Add(current);
-
-            foreach (Vector2Int neighbor in GetNeighbors(current,end))
-            {
-                if (closedSet.Contains(neighbor))
-                    continue;
-
-                float tentativeGScore = gScore[current] + 1;
-
-                if (!openSet.Contains(neighbor))
-                    openSet.Add(neighbor);
-
-                if (tentativeGScore < gScore.GetValueOrDefault(neighbor, float.MaxValue))
-                {
-                    cameFrom[neighbor] = current;
-                    gScore[neighbor] = tentativeGScore;
-                    fScore[neighbor] = gScore[neighbor] + Heuristic(neighbor, end);
-                }
-            }
-        }
-
-        return path;
-    }
-
-    // Método para obtener un borde libre aleatorio para el punto final
+    // obtener un borde libre aleatorio para el punto final
     Vector2Int GetValidEndPoint()
     {
         List<Vector2Int> possibleEdges = new List<Vector2Int> {
@@ -151,32 +94,90 @@ public class Chunk
         var EDGE = possibleEdges[Random.Range(0, possibleEdges.Count)];
 
         // Ajustar las coordenadas del borde
-        if (EDGE.y == -1) 
+        if (EDGE.y == -1)
             EDGE.y = Random.Range(1, iSize - 1);
-        else if (EDGE.x == -1) 
+        else if (EDGE.x == -1)
             EDGE.x = Random.Range(1, iSize - 1);
-        else if (EDGE.x == iSize-1) 
+        else if (EDGE.x == iSize - 1)
             EDGE.y = Random.Range(1, iSize - 1);
-        else if (EDGE.y == iSize - 1) 
+        else if (EDGE.y == iSize - 1)
             EDGE.x = Random.Range(1, iSize - 1);
 
         return EDGE;
     }
 
+    //A*
+    List<Vector2Int> GeneratePath(
+     Vector2Int start, Vector2Int end)
+    {
+        List<Vector2Int> path = new List<Vector2Int>();
+
+        var openSet = new HashSet<Vector2Int>();
+        var closedSet = new HashSet<Vector2Int>();
+        var cameFrom = new Dictionary<Vector2Int, Vector2Int>();
+        var gScore = new Dictionary<Vector2Int, float>();
+        var fScore = new Dictionary<Vector2Int, float>();
+
+        openSet.Add(start);
+        gScore[start] = gScore.GetValueOrDefault(start, 0);
+        fScore[start] = gScore[start] + Heuristic(start, end);
+
+        while (openSet.Count > 0)
+        {
+            Vector2Int current = GetLowestFScoreNode(openSet, fScore);
+
+            if (current == end)
+            {
+                while (cameFrom.ContainsKey(current))
+                {
+                    path.Add(current);
+                    current = cameFrom[current];
+                }
+                path.Reverse();
+                return path;
+            }
+
+            openSet.Remove(current);
+            closedSet.Add(current);
+
+            foreach (Vector2Int neighbor in GetNeighbors(current, end))
+            {
+                if (closedSet.Contains(neighbor))
+                    continue;
+
+                float tentativeGScore = gScore.GetValueOrDefault(current, float.MaxValue) + 1;
+
+                if (!openSet.Contains(neighbor))
+                    openSet.Add(neighbor);
+
+                if (tentativeGScore < gScore.GetValueOrDefault(neighbor, float.MaxValue))
+                {
+                    cameFrom[neighbor] = current;
+                    gScore[neighbor] = tentativeGScore;
+                    fScore[neighbor] = gScore[neighbor] + Heuristic(neighbor, end);
+                }
+            }
+        }
+
+        return path;
+    }
+
+
+
     // Método para obtener los vecinos adyacentes (evitar bordes)
     List<Vector2Int> GetNeighbors(Vector2Int point,Vector2Int endPoint)
     {
         List<Vector2Int> neighbors = new List<Vector2Int>
-    {
-        new Vector2Int(point.x - 1, point.y), // Izquierda
-        new Vector2Int(point.x + 1, point.y), // Derecha
-        new Vector2Int(point.x, point.y - 1), // Arriba
-        new Vector2Int(point.x, point.y + 1)  // Abajo
-    };
+        {
+            new Vector2Int(point.x - 1, point.y), // Izquierda
+            new Vector2Int(point.x + 1, point.y), // Derecha
+            new Vector2Int(point.x, point.y - 1), // Arriba
+            new Vector2Int(point.x, point.y + 1)  // Abajo
+        };
 
         // Filtrar vecinos que estén dentro de los límites válidos (evitar bordes)
         neighbors = neighbors.Where(n =>
-        (!IsBlocked(n) || vStartPoints.Contains(n)) // Permitimos el nodo final aunque esté en el borde
+        (!IsBlocked(n) || n==endPoint) // Permitimos el nodo final aunque esté en el borde
         ).ToList();
 
         return neighbors;
@@ -186,8 +187,7 @@ public class Chunk
     public bool IsBlocked(Vector2Int current)
     {
         // Combinamos todas las condiciones de los bordes en una sola verificación
-        bool isEdge = current.x <= 0 || current.y <= 0 || current.x >= iSize - 1 || current.y >= iSize - 1;
-        return isEdge || mChunkData[current.x, current.y];
+        return current.x <= 0 || current.y <= 0 || current.x >= iSize - 1 || current.y >= iSize - 1;
     }
 
     // Heurística de Manhattan para A*
@@ -202,13 +202,13 @@ public class Chunk
         Vector2Int lowest = openSet.First();
         foreach (var node in openSet)
         {
-            if (fScore.ContainsKey(node) && fScore[node] < fScore[lowest])
+            if (fScore.GetValueOrDefault(node, float.MaxValue) < fScore.GetValueOrDefault(lowest, float.MaxValue))
                 lowest = node;
         }
         return lowest;
     }
 
-    // Método para generar el mesh del chunk
+    // generar el mesh del chunk
     void GenerateMesh()
     {
         for (int i = 0; i < iSize; i++)
@@ -218,10 +218,10 @@ public class Chunk
                 GameObject go = GameObject.Instantiate(generateTerrain.gPath, GChunk.transform, false);
                 go.transform.SetLocalPositionAndRotation(new Vector3(i, 0, j), GChunk.transform.rotation);
 
-                if (!mChunkData[i, j])
+                if (!mChunkData.Contains(new Vector2Int(i,j)))
                 {
                     go = GameObject.Instantiate(generateTerrain.gWall, GChunk.transform, false);
-                    go.transform.SetLocalPositionAndRotation(new Vector3(i, generateTerrain.gWall.transform.localScale.y, j), GChunk.transform.rotation);
+                    go.transform.SetLocalPositionAndRotation(new Vector3(i, generateTerrain.gWall.transform.localScale.y,j), GChunk.transform.rotation);
                 }
             }
         }
